@@ -1,0 +1,8 @@
+flask
+pyjwt
+cryptography
+numpy
+qiskit>=1.0
+qiskit-aer
+pymongo>=4.6,<5
+python-dotenv
