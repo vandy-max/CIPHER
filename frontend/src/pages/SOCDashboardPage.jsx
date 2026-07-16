@@ -10,13 +10,25 @@
  * reached).
  */
 import { useEffect, useState } from "react";
-import { getSocSummary, getSocUsers } from "../services/api";
+import { getSocSummary, getSocUsers, updateUserRole } from "../services/api";
+
+// Mirrors backend ROLES / ROLE_DEFAULT_PRIVILEGE in app.py — kept in sync
+// manually since the roster is small and rarely changes.
+const ROLES = ["BANK_EMPLOYEE", "BRANCH_MANAGER", "SECURITY_ANALYST", "DATABASE_ADMIN", "SYSTEM_ADMIN", "AUDITOR"];
+const ROLE_DEFAULT_PRIVILEGE = { BANK_EMPLOYEE:1, BRANCH_MANAGER:3, SECURITY_ANALYST:3, DATABASE_ADMIN:4, SYSTEM_ADMIN:5, AUDITOR:2 };
 
 export default function SOCDashboardPage() {
   const [summary, setSummary] = useState(null);
   const [users, setUsers]     = useState(null);
   const [error, setError]     = useState("");
   const [tab, setTab]         = useState("overview"); // overview | requests | users
+  const [pendingRole, setPendingRole] = useState({}); // { [userId]: role } — edited but not yet saved
+  const [savingId, setSavingId]       = useState(null);
+  const [rowError, setRowError]       = useState({});  // { [userId]: message }
+
+  let currentUser = null;
+  try { currentUser = JSON.parse(localStorage.getItem("qe_user") || "null"); } catch { /* ignore */ }
+  const isSystemAdmin = currentUser?.role === "SYSTEM_ADMIN";
 
   const load = () => {
     setError("");
@@ -25,6 +37,21 @@ export default function SOCDashboardPage() {
       .catch(e => setError(e.message));
   };
   useEffect(load, []);
+
+  const saveRole = (userId) => {
+    const role = pendingRole[userId];
+    if (!role) return;
+    setSavingId(userId);
+    setRowError(prev => ({ ...prev, [userId]: "" }));
+    updateUserRole(userId, { role, privilege_level: ROLE_DEFAULT_PRIVILEGE[role] })
+      .then(updated => {
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: updated.role, privilege_level: updated.privilege_level } : u));
+        setPendingRole(prev => { const next = { ...prev }; delete next[userId]; return next; });
+      })
+      .catch(e => setRowError(prev => ({ ...prev, [userId]: e.message })))
+      .finally(() => setSavingId(null));
+  };
+
 
   if (error) {
     return (
@@ -171,11 +198,23 @@ export default function SOCDashboardPage() {
       {tab === "users" && (
         <div className="card c-indigo">
           <h2>Users &amp; Roles</h2>
+          {isSystemAdmin && (
+            <p style={{color:"var(--text2)",marginTop:-4,marginBottom:12,fontSize:13}}>
+              As SYSTEM_ADMIN you can promote or change any user's role below. Self-service registration always
+              starts a user at BANK_EMPLOYEE — this is the only way to grant an elevated role afterward.
+            </p>
+          )}
           <div className="log-wrap">
             <table className="log-table">
-              <thead><tr><th>Username</th><th>Role</th><th>Department</th><th>Privilege</th><th>Face Enrolled</th><th>Since</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>Username</th><th>Role</th><th>Department</th><th>Privilege</th>
+                  <th>Face Enrolled</th><th>Since</th>
+                  {isSystemAdmin && <th>Change Role</th>}
+                </tr>
+              </thead>
               <tbody>
-                {users === null && <tr><td colSpan={6} className="empty-t">Loading…</td></tr>}
+                {users === null && <tr><td colSpan={isSystemAdmin ? 7 : 6} className="empty-t">Loading…</td></tr>}
                 {users?.map(u => (
                   <tr key={u.id}>
                     <td>{u.username}</td>
@@ -184,6 +223,30 @@ export default function SOCDashboardPage() {
                     <td><span className="badge b-info">L{u.privilege_level}</span></td>
                     <td>{u.face_enrolled ? <span className="badge b-success">✓ Enrolled</span> : <span className="badge b-warning">Not enrolled</span>}</td>
                     <td className="mono">{new Date(u.created_at).toLocaleDateString()}</td>
+                    {isSystemAdmin && (
+                      <td>
+                        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                          <select
+                            value={pendingRole[u.id] ?? u.role}
+                            onChange={e => setPendingRole(prev => ({ ...prev, [u.id]: e.target.value }))}
+                            style={{fontSize:12,padding:"4px 6px"}}
+                          >
+                            {ROLES.map(r => (
+                              <option key={r} value={r}>{r.replace(/_/g," ")}</option>
+                            ))}
+                          </select>
+                          <button
+                            className="btn btn-violet btn-xs"
+                            disabled={!pendingRole[u.id] || pendingRole[u.id] === u.role || savingId === u.id}
+                            onClick={() => saveRole(u.id)}
+                          >
+
+                            {savingId === u.id ? "Saving…" : "Save"}
+                          </button>
+                        </div>
+                        {rowError[u.id] && <div style={{color:"var(--danger, #c1473a)",fontSize:11,marginTop:4}}>{rowError[u.id]}</div>}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -191,6 +254,7 @@ export default function SOCDashboardPage() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

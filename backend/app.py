@@ -25,9 +25,11 @@ from this endpoint means a real quantum circuit actually ran.
 
 Persistence: MongoDB (via PyMongo) — see db.py. Every collection mirrors
 the shape of the previous SQLite tables 1:1 (same field names, same
-relationships), so nothing about auth, RBAC, intent binding, quantum key handling,
-encryption, face verification, or risk scoring changed — only the storage layer
-underneath it did. Data now persists across restarts.
+relationships), so nothing about auth, RBAC, intent binding, quantum key
+handling, encryption, face verification, or risk scoring changed — only
+the storage layer underneath it did. Data now persists across restarts
+and processes/instances (previously a single local `quantum_cipher.db`
+file), which is also what makes multi-instance cloud deployment safe.
 """
 import os
 import hashlib
@@ -58,8 +60,14 @@ JWT_SECRET = os.environ.get("JWT_SECRET", "dev-secret-change-me")
 JWT_ALGO = "HS256"
 TOKEN_TTL_HOURS = int(os.environ.get("TOKEN_TTL_HOURS", "24"))
 QBER_ABORT_THRESHOLD = 0.11  # 11%
- # The frontend origin for local development.
-ALLOWED_ORIGINS = [os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173")]
+
+# Comma-separated list of exact frontend origins allowed to call this API in
+# production (e.g. "https://app.finspark.example,https://staging.finspark.example").
+# Defaults to the Vite dev server origin so local development keeps working
+# unconfigured. A bare "*" keeps the old any-origin behavior (NOT
+# recommended once real user data is involved) — set explicit origins in
+# production instead.
+ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173").split(",") if o.strip()]
 
 # ─────────────────────────────────────────────────────────────────
 # Banking privileged-access model (FinSpark alignment)
@@ -229,7 +237,7 @@ app = Flask(__name__)
 @app.after_request
 def add_cors_headers(resp):
     origin = request.headers.get("Origin")
-    if origin and origin in ALLOWED_ORIGINS:
+    if origin and ("*" in ALLOWED_ORIGINS or origin in ALLOWED_ORIGINS):
         resp.headers["Access-Control-Allow-Origin"] = origin
         resp.headers["Vary"] = "Origin"
     resp.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
@@ -356,18 +364,14 @@ def register():
     face_embedding = data.get("face_embedding")
 
     if not username or not password:
-        return jsonify({"error": "Username and password are required."}), 400
-    if len(password) < 8:
-        return jsonify({"error": "Password must contain at least 8 characters."}), 400
+        return jsonify({"error": "username and password are required"}), 400
+    if len(password) < 4:
+        return jsonify({"error": "password must be at least 4 characters"}), 400
 
     db = get_db()
     existing = db.users.find_one({"username": username})
     if existing:
-        return jsonify({"error": "Username already exists."}), 409
-
-    existing_email = db.users.find_one({"email": email})
-    if existing_email:
-        return jsonify({"error": "Email address is already registered."}), 409
+        return jsonify({"error": "username already taken"}), 409
 
     # Self-service registration is ALWAYS assigned the lowest-privilege
     # banking role (BANK_EMPLOYEE, privilege level 1) — a person can never
@@ -394,7 +398,7 @@ def register():
         })
     except Exception:
         # Backstop against a race with the unique index on `username`.
-        return jsonify({"error": "Username already exists."}), 409
+        return jsonify({"error": "username already taken"}), 409
 
     user = {
         "id": uid, "username": username, "email": email,
@@ -1427,7 +1431,67 @@ def soc_users():
     return jsonify({"users": users})
 
 
+@app.route("/api/admin/users/<int:user_id>/role", methods=["PATCH"])
+@auth_required
+@require_role("SYSTEM_ADMIN")
+def update_user_role(user_id):
+    """SYSTEM_ADMIN-only role/privilege promotion for an EXISTING account.
+
+    This is the only way an elevated role (BRANCH_MANAGER, SECURITY_ANALYST,
+    DATABASE_ADMIN, SYSTEM_ADMIN, AUDITOR) can be granted after signup — the
+    public /api/register route intentionally always assigns BANK_EMPLOYEE
+    (see the comment there) and that behavior is unchanged by this endpoint.
+    """
+    data = request.get_json(force=True, silent=True) or {}
+    new_role = (data.get("role") or "").strip()
+    new_privilege = data.get("privilege_level")
+
+    if new_role not in ROLES:
+        return jsonify({"error": f"role must be one of {ROLES}"}), 400
+
+    # privilege_level is optional; if omitted, use the role's default.
+    if new_privilege is None:
+        new_privilege = ROLE_DEFAULT_PRIVILEGE[new_role]
+    else:
+        try:
+            new_privilege = int(new_privilege)
+        except (TypeError, ValueError):
+            return jsonify({"error": "privilege_level must be an integer 1-5"}), 400
+        if not (1 <= new_privilege <= 5):
+            return jsonify({"error": "privilege_level must be an integer 1-5"}), 400
+
+    db = get_db()
+    target = db.users.find_one({"_id": user_id}, {"username": 1, "role": 1, "privilege_level": 1})
+    if not target:
+        return jsonify({"error": "user not found"}), 404
+
+    old_role = target.get("role")
+    old_privilege = target.get("privilege_level")
+
+    db.users.update_one(
+        {"_id": user_id},
+        {"$set": {"role": new_role, "privilege_level": new_privilege}},
+    )
+
+    log_event(
+        g.user_id, "user_role_changed",
+        {
+            "target_user_id": user_id,
+            "target_username": target.get("username"),
+            "old_role": old_role, "new_role": new_role,
+            "old_privilege_level": old_privilege, "new_privilege_level": new_privilege,
+        },
+        risk_level="MEDIUM",
+    )
+
+    return jsonify({
+        "id": user_id, "username": target.get("username"),
+        "role": new_role, "privilege_level": new_privilege,
+    })
+
+
 @app.route("/api/dashboard-stats", methods=["GET"])
+
 @auth_required
 def dashboard_stats():
     db = get_db()

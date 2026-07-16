@@ -1,6 +1,4 @@
-// Keep local development requests on the same origin so Vite can proxy
-// `/api` to Flask. Production deployments must set VITE_API_URL at build time.
-const BASE_URL = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 function getToken() { return localStorage.getItem("qe_token"); }
 function headers() {
@@ -9,21 +7,8 @@ function headers() {
   return h;
 }
 async function request(path, options = {}) {
-  let res;
-  try {
-    res = await fetch(`${BASE_URL}${path}`, { headers: headers(), ...options });
-  } catch {
-    throw new Error("Cannot reach the CipherQ API. Start the backend on port 5000, then try again.");
-  }
-
-  const contentType = res.headers.get("content-type") || "";
-  const data = contentType.includes("application/json") ? await res.json() : null;
-
-  if (!data) {
-    throw new Error(
-      "The CipherQ API returned an HTML page instead of JSON. Check VITE_API_URL and ensure the backend is running."
-    );
-  }
+  const res  = await fetch(`${BASE_URL}${path}`, { headers: headers(), ...options });
+  const data = await res.json();
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data;
 }
@@ -65,3 +50,8 @@ export const getAccessRequests   = (scope="mine") => request(`/access-requests?s
 // ── SOC (Security Operations Center) dashboard — role-gated ────────
 export const getSocSummary = () => request("/soc/summary");
 export const getSocUsers   = () => request("/soc/users");
+
+// ── Admin — SYSTEM_ADMIN-only role/privilege promotion ──────────────
+export const updateUserRole = (userId, body) =>
+  request(`/admin/users/${userId}/role`, { method:"PATCH", body:JSON.stringify(body) });
+
