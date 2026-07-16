@@ -18,6 +18,15 @@ const REGISTER_ASSURANCES = [
 ];
 
 const BADGES = ["AES-256-GCM", "BB84 QUANTUM-SAFE", "RBAC ENFORCED", "FACE VERIFIED"];
+const DEPARTMENTS = [
+  "Retail Banking",
+  "Corporate Banking",
+  "Cyber Security",
+  "IT Operations",
+  "Internal Audit"
+];
+
+
 
 function AuthShell({ children, isLogin }) {
   return (
@@ -71,7 +80,14 @@ function AuthShell({ children, isLogin }) {
 export default function AuthPage({ mode, saveAuth, navigate }) {
   const isLogin = mode === "login";
   const [stage, setStage] = useState("credentials"); // credentials | face | done
-  const [form, setForm] = useState({ username:"", email:"", password:"", department:"" });
+ // const [form, setForm] = useState({ username:"", email:"", password:"", department:"" });
+ const [form, setForm] = useState({
+  username: "",
+  email: "",
+  password: "",
+  department: ""
+});
+ 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [pendingAuth, setPendingAuth] = useState(null); // {token,user} while offering face enrollment
@@ -147,13 +163,27 @@ export default function AuthPage({ mode, saveAuth, navigate }) {
               onChange={set("email")} required />
           </div>
         )}
-        {!isLogin && (
-          <div className="fg">
-            <label>Department (optional)</label>
-            <input type="text" placeholder="e.g. Retail Banking, Consumer Lending…" value={form.department}
-              onChange={set("department")} />
-          </div>
-        )}
+       {!isLogin && (
+  <div className="fg">
+    <label>Department</label>
+
+    <select
+      value={form.department}
+      onChange={set("department")}
+      required
+    >
+      <option value="">Select Department</option>
+
+      {DEPARTMENTS.map(dep => (
+        <option key={dep} value={dep}>
+          {dep}
+        </option>
+      ))}
+    </select>
+  </div>
+)}
+
+
         <div className="fg">
           <label>Password</label>
           <div className="auth-pw-wrap">

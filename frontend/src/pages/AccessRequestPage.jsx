@@ -250,33 +250,57 @@ export default function AccessRequestPage({ user }) {
           <div className="fg">
             <label>Protected Resource *</label>
             <div className="resource-grid">
-              {Object.entries(RESOURCE_META).map(([key, meta]) => (
-                <div
-                  key={key}
-                  className={`resource-tile ${resource===key ? "selected" : ""}`}
-                  onClick={() => { setResource(key); setOperation(""); }}
-                >
-                  <span className="resource-tile-icon">{meta.icon}</span>
-                  <span className="resource-tile-label">{meta.label}</span>
-                  <span className="resource-tile-desc">{meta.desc}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+  {(catalog?.resources || []).map((r) => {
+    const meta = RESOURCE_META[r.resource];
+    if (!meta) return null;
+
+    const canAccess = r.operations.some(op => op.allowed);
+
+    return (
+      <div
+        key={r.resource}
+        className={`resource-tile ${
+          resource === r.resource ? "selected" : ""
+        } ${!canAccess ? "disabled" : ""}`}
+        onClick={() => {
+          if (!canAccess) return;
+          setResource(r.resource);
+          setOperation("");
+        }}
+      >
+        <span className="resource-tile-icon">{meta.icon}</span>
+        <span className="resource-tile-label">{meta.label}</span>
+        <span className="resource-tile-desc">{meta.desc}</span>
+      </div>
+    );
+  })}
+</div>
+</div>
 
           {resource && (
             <div className="fg">
               <label>Operation *</label>
               <div className="op-chip-row">
-                {Object.entries(OPERATION_META).map(([key, meta]) => {
-                  const info = resourceOps.find(o => o.operation === key); // Keep for privilege level hint
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      className={`op-chip ${operation===key ? "selected" : ""}`}
-                      onClick={() => setOperation(key)}
-                    >
+               {Object.entries(OPERATION_META).map(([key, meta]) => {
+
+    const info = resourceOps.find(o => o.operation === key);
+
+    const allowed = info?.allowed;
+
+    return (
+
+        <button
+            key={key}
+            type="button"
+            disabled={!allowed}
+            className={`op-chip ${
+                operation===key ? "selected" : ""
+            } ${!allowed ? "disabled" : ""}`}
+            onClick={() => {
+                if (!allowed) return;
+                setOperation(key);
+            }}
+        >
                       <span>{meta.icon}</span> {meta.label}
                       {info?.required_privilege ? <span className="op-chip-priv">L{info.required_privilege}+</span> : null}
                     </button>

@@ -777,3 +777,14 @@ main{flex:1;min-width:0;padding-top:var(--hd-h)}
 .op-chip.selected{background:var(--ink);color:#fff;border-color:var(--ink)}
 .op-chip.disabled{opacity:.4;cursor:not-allowed;text-decoration:line-through}
 .op-chip-priv{font-size:10px;font-weight:800;opacity:.75;margin-left:2px}
+.resource-tile.disabled {
+    opacity: 0.45;
+    pointer-events: none;
+    cursor: default;
+}
+
+.op-chip.disabled {
+    opacity: 0.45;
+    pointer-events: none;
+    cursor: default;
+}
