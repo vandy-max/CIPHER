@@ -1,3 +1,7 @@
+<p align="center">
+  <img src=".img1.png" alt="CipherQ Banner" width="700">
+</p>
+
 # CipherQ 
 ### Banking Privileged-Access Security Platform — Intent-Bound, Quantum-Safe, RBAC-Enforced
 
