@@ -47,12 +47,12 @@ Traditional banking access control stops at "is this the right role?" That leave
 </p>
 
 <p align="center">
-  <img src="Dashboard.png" alt="Dashboard" width="800"><br>
+  <img src="dashboard.png" alt="Dashboard" width="800"><br>
   <sub><i>Dashboard — role, department, privilege level, quantum channel integrity, and recent activity</i></sub>
 </p>
 
 <p align="center">
-  <img src="access-request.png" alt="Access Request" width="800"><br>
+  <img src="access.png" alt="Access Request" width="800"><br>
   <sub><i>Access Request — resource + operation selection, business intent, and the live verification pipeline</i></sub>
 </p>
 
