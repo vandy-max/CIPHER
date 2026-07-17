@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/license-see%20LICENSE-lightgrey" alt="License">
 </p>
 
-CipherQ is FinSpark's privileged-access security platform for banking staff. Every banking role (Bank Employee, Branch Manager, Security Analyst, Database Admin, System Admin, Auditor) requests access to protected banking resources (Customer Records, Transactions, Loans, Treasury Data, Audit Records, Database Export, System Configuration) through one workflow that enforces **backend RBAC + privilege level**, **intent binding**, **BB84/Qiskit quantum-safe key security**, **adaptive risk scoring**, and **mandatory face identity verification** — before any access is ever granted.
+CipherQ is privileged-access security platform for banking staff. Every banking role (Bank Employee, Branch Manager, Security Analyst, Database Admin, System Admin, Auditor) requests access to protected banking resources (Customer Records, Transactions, Loans, Treasury Data, Audit Records, Database Export, System Configuration) through one workflow that enforces **backend RBAC + privilege level**, **intent binding**, **BB84/Qiskit quantum-safe key security**, **adaptive risk scoring**, and **mandatory face identity verification** — before any access is ever granted.
 
 This is the original Intent-Bound Quantum Encryption / CipherQ project, evolved into a banking privileged-access platform — not a rebuild, and not a second application bolted onto the first. See [`CHANGES.md`](./CHANGES.md) for the exact edit history.
 
