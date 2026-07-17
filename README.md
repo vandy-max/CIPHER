@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="image.png" alt="CipherQ Banner" width="100">
+  <img src="img1(2).png" alt="CipherQ Banner" width="700">
 </p>
 
 # CipherQ 
