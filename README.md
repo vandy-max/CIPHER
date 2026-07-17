@@ -368,9 +368,16 @@ The backend is a standard Flask app (`app.py`) reading config from environment v
 
 **Qiskit Aer note:** `qiskit-aer` is a heavier, platform-specific dependency (larger wheel, longer build). Standard Python buildpacks on Render/Railway/Fly install it fine from PyPI wheels on their default Linux images — no extra system packages are needed — but the first deploy's build step will take noticeably longer than a typical Flask app because of it. There is no computer-vision Python dependency to worry about — face detection/embedding runs entirely client-side via face-api.js in the browser (see `frontend/public/models/`); the backend never processes images.
 
-### 3 — Frontend (pick one)
+###3 - A static Vite build (`npm run build` → `dist/`) — deploy to **Render**, **Vercel**, **Netlify**, or any static host / CDN.
 
-A static Vite build (`npm run build` → `dist/`) — deploy to **Vercel**, **Netlify**, or any static host / CDN.
+**Example — Render (Static Site):**
+
+1. Render → New → Static Site → connect the repo → Root Directory `frontend`.
+2. Build Command: `npm run build`
+3. Publish Directory: `dist`
+4. Add environment variable `VITE_API_URL = https://<your-backend-host>/api` — this must be set **before** the build runs, since Vite bakes it into the bundle. On Render, add it under the Static Site's **Environment** tab and trigger a manual deploy/rebuild if you set it after the first build.
+5. Add a **Rewrite Rule** so client-side routing doesn't 404 on refresh: Source `/*`, Destination `/index.html`, Action `Rewrite`.
+6. Deploy, then go back to your backend's Render service and set `ALLOWED_ORIGINS` to this static site's final URL (e.g. `https://cipherq-frontend.onrender.com`), then redeploy/restart the backend so CORS actually allows it.
 
 **Example — Vercel:**
 
@@ -380,6 +387,8 @@ A static Vite build (`npm run build` → `dist/`) — deploy to **Vercel**, **Ne
 4. Deploy, then go back to your backend host and set `ALLOWED_ORIGINS` to this frontend's final URL (e.g. `https://cipherq.vercel.app`), then redeploy/restart the backend so CORS actually allows it.
 
 Netlify works the same way: Base directory `frontend`, Build command `npm run build`, Publish directory `frontend/dist`, same `VITE_API_URL` env var, and a SPA redirect rule (`/* /index.html 200`) — `frontend/nginx.conf` (included in this repo) encodes the same fallback if you containerize the frontend yourself instead.
+
+> Since both backend and frontend can live on Render, a single Render account can host this entire stack (Web Service + Static Site), leaving only MongoDB Atlas as an external dependency.
 
 ### 4 — Verify the deployed stack
 
