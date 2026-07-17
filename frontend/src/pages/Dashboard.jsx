@@ -100,24 +100,6 @@ export default function Dashboard({ navigate, user }) {
         ))}
       </div>
 
-      {stats?.recent_events?.length > 0 && (
-        <div className="card c-indigo" style={fade(0.24)}>
-          <h2>Recent Security Activity</h2>
-          <div className="ev-list">
-            {stats.recent_events.slice(0, 6).map(ev => (
-              <div key={ev.id} className="ev-row">
-                <span className={`ev-dot ${ev.risk_level.toLowerCase()}`}></span>
-                <span className="ev-type">{ev.event_type.replace(/_/g, " ")}</span>
-                <span className={`sp-pill sp-${ev.status.toLowerCase()}`}>{ev.status}</span>
-                <span className="ev-time">{new Date(ev.timestamp).toLocaleTimeString()}</span>
-              </div>
-            ))}
-          </div>
-          <div style={{marginTop:14}}>
-            <button className="btn btn-ghost" onClick={() => navigate("activity")}>View all activity →</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

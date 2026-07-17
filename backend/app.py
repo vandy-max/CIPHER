@@ -767,7 +767,13 @@ def get_logs():
     limit = request.args.get("limit", default=50, type=int)
     limit = max(1, min(limit, 500))
     db = get_db()
-    rows = db.security_logs.find().sort("_id", -1).limit(limit)
+    # Previously this had no filter at all — db.security_logs.find() — so
+    # any authenticated user's Security Activity page showed every user's
+    # login/access events, not just their own. Scope it to the requesting
+    # user; SYSTEM_ADMIN keeps the unrestricted view (matches their
+    # existing SOC-wide visibility elsewhere, e.g. /api/soc/summary).
+    query = {} if g.role == "SYSTEM_ADMIN" else {"user_id": g.user_id}
+    rows = db.security_logs.find(query).sort("_id", -1).limit(limit)
     logs = [_serialize_log(r) for r in rows]
     return jsonify({"logs": logs, "count": len(logs)})
 
