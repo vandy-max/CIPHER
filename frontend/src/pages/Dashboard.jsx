@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 import { getDashboardStats } from "../services/api";
 
-const SOC_ROLES = ["SECURITY_ANALYST", "SYSTEM_ADMIN", "DATABASE_ADMIN", "AUDITOR"];
+// Roles allowed to see/open the Threat Detection Center (SOC dashboard).
+// Previously SECURITY_ANALYST, DATABASE_ADMIN, and AUDITOR could see it
+// too; scoped down to SYSTEM_ADMIN only — must match backend SOC_ROLES.
+const SOC_ROLES = ["SYSTEM_ADMIN"];
 
 const BASE_CARDS = [
   { id:"request",  icon:"◆", title:"Access Request",     desc:"Request privileged access to protected banking resources secured by CipherQ.", tag:"Start here", color:"c-violet" }, // No change needed

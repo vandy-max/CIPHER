@@ -1,13 +1,12 @@
 /**
  * SOCDashboardPage.jsx
  * ---------------------
- * Security Operations Center dashboard for authorized banking roles
- * (SECURITY_ANALYST, SYSTEM_ADMIN, DATABASE_ADMIN, AUDITOR). Shows
- * bank-wide access requests, allow/deny decisions, the user/role roster,
- * risk scores, and recent security events — all backed by GET
- * /api/soc/summary and /api/soc/users, which are role-gated server-side
- * (a non-authorized role gets a 403 even if this page were somehow
- * reached).
+ * Security Operations Center / Threat Detection Center dashboard,
+ * SYSTEM_ADMIN only. Shows bank-wide access requests, allow/deny
+ * decisions, the user/role roster, risk scores, and recent security
+ * events — all backed by GET /api/soc/summary and /api/soc/users, which
+ * are role-gated server-side (a non-admin gets a 403 even if this page
+ * were somehow reached).
  */
 import { useEffect, useState } from "react";
 import { getSocSummary, getSocUsers, updateUserRole } from "../services/api";

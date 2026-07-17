@@ -112,9 +112,11 @@ RESOURCES = [
 
 OPERATIONS = ["VIEW", "MODIFY", "EXPORT", "APPROVE", "DELETE", "ADMINISTER"]
 
-# Roles allowed to view the SOC (Security Operations Center) dashboard —
-# access requests, decisions, users/roles, risk scores, security events.
-SOC_ROLES = {"SECURITY_ANALYST", "SYSTEM_ADMIN", "DATABASE_ADMIN", "AUDITOR"}
+# Roles allowed to view the SOC (Security Operations Center) / Threat
+# Detection Center dashboard — access requests, decisions, users/roles,
+# risk scores, security events. Previously SECURITY_ANALYST, DATABASE_ADMIN,
+# and AUDITOR could see it too; scoped down to SYSTEM_ADMIN only.
+SOC_ROLES = {"SYSTEM_ADMIN"}
 
 # ── RBAC matrix: role -> resource -> {operation: minimum privilege level} ──
 # This is the backend-enforced authorization table. A role/resource/
@@ -1424,10 +1426,10 @@ def _serialize_access_request(r, username):
 
 
 # ─────────────────────────────────────────────────────────────────
-# Routes — SOC (Security Operations Center) dashboard
-# Role-gated: only SECURITY_ANALYST, SYSTEM_ADMIN, DATABASE_ADMIN and
-# AUDITOR may view bank-wide access requests, the user/role roster, and
-# aggregate risk/security-event data.
+# Routes — SOC (Security Operations Center) / Threat Detection Center
+# Role-gated: SYSTEM_ADMIN only (see SOC_ROLES above) may view bank-wide
+# access requests, the user/role roster, and aggregate risk/security-event
+# data.
 # ─────────────────────────────────────────────────────────────────
 @app.route("/api/soc/summary", methods=["GET"])
 @auth_required

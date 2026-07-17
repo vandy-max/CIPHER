@@ -13,7 +13,10 @@ import AccountSecurityPage     from "./pages/AccountSecurityPage";
 import Sidebar                 from "./components/Sidebar";
 import Header                  from "./components/Header";
 
-const SOC_ROLES = ["SECURITY_ANALYST", "SYSTEM_ADMIN", "DATABASE_ADMIN", "AUDITOR"];
+// Roles allowed to see/open the Threat Detection Center (SOC dashboard).
+// Previously SECURITY_ANALYST, DATABASE_ADMIN, and AUDITOR could see it
+// too; scoped down to SYSTEM_ADMIN only — must match backend SOC_ROLES.
+const SOC_ROLES = ["SYSTEM_ADMIN"];
 
 export default function App() {
   const { token, user, saveAuth, logout, updateUser, isAuthenticated } = useAuth();
@@ -54,6 +57,14 @@ export default function App() {
     setMobileNavOpen(false);
   };
 
+  // Sign Out only cleared the token/user (see useAuth.logout) — it never
+  // reset `page`. So after logging out from, say, "dashboard", `page`
+  // stayed "dashboard": isAuthenticated was now false so the protected
+  // page below didn't render, but page wasn't "landing" either, so
+  // LandingPage didn't render — <main> ended up completely blank until a
+  // manual browser refresh reset `page` back to its "landing" default.
+  const handleLogout = () => { logout(); setPage("landing"); };
+
   const showShell = isAuthenticated && !["landing", "login", "register"].includes(page);
 
   return (
@@ -61,7 +72,7 @@ export default function App() {
       {showShell && (
         <>
           <Sidebar
-            user={user} navigate={navigate} logout={logout} currentPage={page}
+            user={user} navigate={navigate} logout={handleLogout} currentPage={page}
             collapsed={collapsed} setCollapsed={setCollapsed}
             mobileOpen={mobileNavOpen} closeMobile={() => setMobileNavOpen(false)}
           />

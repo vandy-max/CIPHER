@@ -3,7 +3,10 @@ import {
   ShieldAlert, UserCog, LogOut, ChevronsLeft, ChevronsRight, ShieldHalf,
 } from "lucide-react";
 
-const SOC_ROLES = ["SECURITY_ANALYST", "SYSTEM_ADMIN", "DATABASE_ADMIN", "AUDITOR"];
+// Roles allowed to see/open the Threat Detection Center (SOC dashboard).
+// Previously SECURITY_ANALYST, DATABASE_ADMIN, and AUDITOR could see it
+// too; scoped down to SYSTEM_ADMIN only — must match backend SOC_ROLES.
+const SOC_ROLES = ["SYSTEM_ADMIN"];
 
 const NAV_SECTIONS = [
   {
